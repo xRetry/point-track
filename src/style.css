@@ -1,0 +1,41 @@
+body {
+    overflow: hidden;
+}
+
+#drone {
+    position: absolute;
+    top: calc(50% - 15px);
+    left: calc(50% - 15px);
+    text-align: center;
+    border: 1px solid;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    z-index: 10;
+    background-color: blue;
+}
+
+.target {
+    position: absolute;
+    top: calc(50% - 15px);
+    left: calc(90% - 15px);
+    text-align: center;
+    border: 1px solid;
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    z-index: 10;
+    background-color: green;
+}
+
+.beam {
+    position: absolute;
+    line-height: 1px;
+    background-color: red;
+    padding: 0px;
+    margin: 0px;
+    top: 50%;
+    left: 50%;
+    height: 5px;
+    width: 1000px;
+}

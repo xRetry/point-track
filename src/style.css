@@ -2,7 +2,7 @@ body {
     overflow: hidden;
 }
 
-#drone {
+#sensor {
     position: absolute;
     top: calc(50% - 15px);
     left: calc(50% - 15px);

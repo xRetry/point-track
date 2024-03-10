@@ -147,8 +147,8 @@ class Sensor {
 
     update() {
         //const angle =  this.angleFromPos(gState.sensor.pos);
-        //const angle =  this.angleFromVel(gState.sensor.vel, gState.dt);
-        const angle =  this.angleFromAcc(gState.sensor.acc, gState.dt);
+        const angle =  this.angleFromVel(gState.sensor.vel, gState.dt);
+        //const angle =  this.angleFromAcc(gState.sensor.acc, gState.dt);
         gState.rotateBeam(angle);
     }
 
@@ -171,11 +171,13 @@ class Sensor {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+/**
+* Initializes the simulation (gets called after CSS is loaded)
+*/
+function init() {
     gState = new State();
     gSensor = new Sensor();
-
-})
+}
 
 function handleMouseDown(e) {
     gState.update(gState.sensor.pos);

@@ -21,6 +21,7 @@ var gSensor;
  * @typedef {Object} SensorState
  * @property {[number, number]} pos
  * @property {[number, number]} vel
+ * @property {[number, number]} acc
  * @property {HTMLElement} html
  */
 
@@ -36,6 +37,8 @@ class State {
     time;
     /** @type {number} */
     dt = 0;
+    /** @type {number} */
+    dtOld = 0;
 
     constructor() {
         const htmlSensor = document.querySelector('#sensor');
@@ -43,6 +46,7 @@ class State {
             html: htmlSensor,
             pos: [htmlSensor.offsetLeft, htmlSensor.offsetTop],
             vel: [0, 0],
+            acc: [0, 0],
         };
 
         this.beam = {
@@ -68,6 +72,7 @@ class State {
      */
     update(pos) {
         const time = window.performance.now();
+        this.dtOld = this.dt;
         this.dt = time - this.time;
         this.time = time;
 
@@ -83,13 +88,20 @@ class State {
         this.sensor.html.style.left = pos[0] + 'px';
         this.sensor.html.style.top  = pos[1] + 'px';
 
-        const dx = [
+        const dPos = [
             this.sensor.html.offsetLeft - this.sensor.pos[0],
             this.sensor.html.offsetTop - this.sensor.pos[1],
         ];
 
         this.sensor.pos = pos;
-        this.sensor.vel = [dx[0]/this.dt, dx[1]/this.dt];
+        const velOld = [this.sensor.vel[0], this.sensor.vel[1]];
+        this.sensor.vel = [
+            dPos[0]/this.dt, 
+            dPos[1]/this.dt
+        ];
+
+        this.sensor.acc[0] = (this.sensor.vel[0] - velOld[0]) / this.dt;
+        this.sensor.acc[1] = (this.sensor.vel[1] - velOld[1]) / this.dt;
     }
 
     /**
@@ -107,13 +119,11 @@ class State {
     }
 
     /**
-     * @returns {[number, number]}
+     * @returns {number}
      */
-    targetDistance() {
-        return [
-            this.target.pos[0] - this.sensor.pos[0],
-            this.target.pos[1] - this.sensor.pos[1],
-        ];
+    getBeamLength() {
+        const diffX = this.target.pos[0] - this.sensor.pos[1];
+        return diffX / Math.cos(this.beam.angle);
     }
 
     /**
@@ -128,16 +138,36 @@ class State {
 class Sensor {
     pos = [0, 0];
     vel = [0, 0];
+    posTarget = [0, 0];
 
     constructor() {
         this.pos = gState.sensor.pos;
+        this.posTarget = gState.target.pos;
     }
 
     update() {
-        const distance = gState.targetDistance();
-        const angle = Math.atan(distance[1]/distance[0]);
-
+        //const angle =  this.angleFromPos(gState.sensor.pos);
+        //const angle =  this.angleFromVel(gState.sensor.vel, gState.dt);
+        const angle =  this.angleFromAcc(gState.sensor.acc, gState.dt);
         gState.rotateBeam(angle);
+    }
+
+    angleFromPos(posNew) {
+        this.pos = posNew;
+        return Math.atan((this.posTarget[1] - this.pos[1]) / (this.posTarget[0] - this.pos[0]));
+    }
+
+    angleFromVel(vel, dt) {
+        this.pos[0] += vel[0]*dt;
+        this.pos[1] += vel[1]*dt;
+        return this.angleFromPos(this.pos);
+    }
+
+    angleFromAcc(acc, dt) {
+        this.pos[0] += acc[0]*dt*dt*0.5;
+        this.pos[1] += acc[1]*dt*dt*0.5;
+        console.log(acc);
+        return this.angleFromPos(this.pos);
     }
 }
 

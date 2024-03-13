@@ -1,3 +1,4 @@
+"use strict"
 /** @type {[number, number]} */
 var gOffset = [0, 0];
 /** @type {State} */
@@ -100,8 +101,9 @@ class State {
             dPos[1]/this.dt
         ];
 
-        this.sensor.acc[0] = (this.sensor.vel[0] - velOld[0]) / this.dt;
+        this.sensor.acc[0] = (this.sensor.vel[0] - velOld[0]) / (0.5*this.dt+0.5*this.dtOld);
         this.sensor.acc[1] = (this.sensor.vel[1] - velOld[1]) / this.dt;
+        console.log(this.sensor.acc[0] * this.dt, this.sensor.vel[0]);
     }
 
     /**
@@ -146,9 +148,9 @@ class Sensor {
     }
 
     update() {
-        //const angle =  this.angleFromPos(gState.sensor.pos);
-        const angle =  this.angleFromVel(gState.sensor.vel, gState.dt);
-        //const angle =  this.angleFromAcc(gState.sensor.acc, gState.dt);
+        //onst angle =  this.angleFromPos(gState.sensor.pos);
+        //const angle =  this.angleFromVel(gState.sensor.vel, gState.dt);
+        const angle =  this.angleFromAcc(gState.sensor.acc, gState.dt);
         gState.rotateBeam(angle);
     }
 
@@ -164,10 +166,11 @@ class Sensor {
     }
 
     angleFromAcc(acc, dt) {
-        this.pos[0] += acc[0]*dt*dt*0.5;
-        this.pos[1] += acc[1]*dt*dt*0.5;
-        console.log(acc);
-        return this.angleFromPos(this.pos);
+        let pos = [
+            acc[0]*dt*dt*0.5,
+            acc[1]*dt*dt*0.5,
+        ];
+        return this.angleFromPos(pos, dt);
     }
 }
 

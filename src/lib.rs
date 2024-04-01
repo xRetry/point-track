@@ -1,17 +1,21 @@
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlElement, window};
-use std::time::{Instant, Duration};
+use std::{f64::consts::PI, time::{Duration, Instant}};
 
 type Pos = [i32; 2];
 
 #[wasm_bindgen]
-extern {
-    pub fn alert(s: &str);
-}
+pub fn run_sim() {
+    let mut state = State::new();
+    let mut sensor = Sensor::new(state.sensor.pos, state.target.pos);
 
-#[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(&format!("Hello, {}!", name));
+    loop {
+        // TODO(marco): Figure out way to get position from mousemove event
+        state.update([0, 0]);
+        let angle = sensor.update_with_pos(state.sensor.pos);
+        state.rotate_beam(angle);
+        std::thread::sleep(Duration::from_millis(30));
+    }
 }
 
 struct SensorState {
@@ -79,14 +83,87 @@ impl State {
         self.time = time;
 
         self.update_sensor(pos);
-        self.update_beam(pos);
+        self.update_beam(pos, self.beam.angle);
     }
 
     fn update_sensor(&mut self, pos: Pos) {
-        todo!();
+        self.sensor.html.style()
+            .set_property("left", &(pos[0].to_string() + "px"))
+            .unwrap();
+        self.sensor.html.style()
+            .set_property("top", &(pos[1].to_string() + "px"))
+            .unwrap();
+
+        let d_pos = [
+            self.sensor.html.offset_left() - self.sensor.pos[0],
+            self.sensor.html.offset_top() - self.sensor.pos[1],
+        ];
+
+        self.sensor.pos = pos;
+        let dt_secs = self.dt.as_secs_f64();
+        let vel_old = [self.sensor.vel[0], self.sensor.vel[1]];
+        self.sensor.vel = [
+            d_pos[0] as f64 / dt_secs,
+            d_pos[1] as f64 / dt_secs,
+        ];
+
+        self.sensor.acc[0] = (self.sensor.vel[0] - vel_old[0]) / (0.5*dt_secs + 0.5*self.dt_old.as_secs_f64());
+        self.sensor.acc[1] = (self.sensor.vel[1] - vel_old[1]) / (0.5*dt_secs + 0.5*self.dt_old.as_secs_f64());
     }
 
-    fn update_beam(&mut self, pos: Pos) {
-        todo!();
+    fn update_beam(&mut self, pos: Pos, angle_rad: f64) {
+        let angle_deg = angle_rad*(180./PI);
+        let x_corr = 500. - 500. * angle_rad.cos();
+        let y_corr = 500. * angle_rad.sin();
+
+        self.beam.html.style()
+            .set_property("transform", &format!("rotate({}deg)", angle_deg))
+            .unwrap();
+        self.sensor.html.style()
+            .set_property("left", &((pos[0] as f64 + 15. - x_corr).to_string() + "px"))
+            .unwrap();
+        self.sensor.html.style()
+            .set_property("top", &((pos[1] as f64 + 15. + y_corr).to_string() + "px"))
+            .unwrap();
+    }
+
+    fn get_beam_length(&self) -> f64 {
+        let diff_x = self.target.pos[0] - self.sensor.pos[0];
+        return diff_x as f64 / self.beam.angle.cos();
+    }
+
+    fn rotate_beam(&mut self, angle_rad: f64) {
+        self.update_beam(self.sensor.pos, angle_rad);
+    }
+}
+
+struct Sensor {
+    pos: Pos,
+    vel: [f64; 2],
+    pos_target: Pos,
+}
+
+impl Sensor {
+    fn new(pos: Pos, pos_target: Pos) -> Self {
+        return Self{
+            pos,
+            pos_target,
+            vel: [0., 0.],
+        };
+    }
+
+    fn update_with_pos(&mut self, pos_true: Pos) -> f64 {
+        self.pos = pos_true;
+        let angle = (
+            (
+                (
+                    self.pos_target[1] - self.pos[1]
+                ) / (
+                    self.pos_target[0] - self.pos[0]
+                )
+            ) as f64
+        ).atan();
+
+        return angle;
     }
 }

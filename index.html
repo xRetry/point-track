@@ -3,12 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <title>hello-wasm example</title>
+    <link rel="stylesheet" href="src/style.css" onload="">
   </head>
   <body>
+    <div id="sensor"></div>
+    <div class="target"></div>
+    <div class="beam"></div>
     <script type="module">
-      import init, { greet } from "./pkg/hello_wasm.js";
+      import init, { run_sim } from "./pkg/hello_wasm.js";
       init().then(() => {
-        greet("WebAssembly");
+        run_sim();
       });
     </script>
   </body>

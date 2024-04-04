@@ -1,20 +1,27 @@
 use wasm_bindgen::prelude::*;
-use web_sys::{HtmlElement, window};
-use std::{f64::consts::PI, time::{Duration, Instant}};
+use web_sys::{HtmlElement, window, console};
+use std::f64::consts::PI;
+use std::time::Duration;
+use console_error_panic_hook;
+use fluvio_wasm_timer::Delay;
 
 type Pos = [i32; 2];
 
 #[wasm_bindgen]
-pub fn run_sim() {
+pub async fn run_sim() {
+    console_error_panic_hook::set_once();
+
     let mut state = State::new();
     let mut sensor = Sensor::new(state.sensor.pos, state.target.pos);
 
     loop {
+        console::log_1(&"Loop".into());
+
         // TODO(marco): Figure out way to get position from mousemove event
         state.update([0, 0]);
         let angle = sensor.update_with_pos(state.sensor.pos);
         state.rotate_beam(angle);
-        std::thread::sleep(Duration::from_millis(30));
+        Delay::new(Duration::from_millis(50)).await.ok();
     }
 }
 
@@ -39,9 +46,9 @@ struct State {
     sensor: SensorState,
     beam: BeamState,
     target: TargetState,
-    time: Instant,
-    dt: Duration,
-    dt_old: Duration,
+    time: f64,
+    dt: f64,
+    dt_old: f64,
 }
 
 impl State {
@@ -70,16 +77,16 @@ impl State {
                 html: document.query_selector(".beam").unwrap().unwrap().dyn_into().unwrap(),
             },
             target,
-            time: Instant::now(),
-            dt: Duration::new(0, 0),
-            dt_old: Duration::new(0, 0),
+            time: window().unwrap().performance().unwrap().now(),
+            dt: 0.,
+            dt_old: 0.,
         };
     }
 
     fn update(&mut self, pos: Pos) {
-        let time = Instant::now();
+        let time = window().unwrap().performance().unwrap().now();
         self.dt_old = self.dt;
-        self.dt = self.time.elapsed();
+        self.dt = time - self.time;
         self.time = time;
 
         self.update_sensor(pos);
@@ -100,15 +107,15 @@ impl State {
         ];
 
         self.sensor.pos = pos;
-        let dt_secs = self.dt.as_secs_f64();
+        let dt_secs = self.dt;
         let vel_old = [self.sensor.vel[0], self.sensor.vel[1]];
         self.sensor.vel = [
             d_pos[0] as f64 / dt_secs,
             d_pos[1] as f64 / dt_secs,
         ];
 
-        self.sensor.acc[0] = (self.sensor.vel[0] - vel_old[0]) / (0.5*dt_secs + 0.5*self.dt_old.as_secs_f64());
-        self.sensor.acc[1] = (self.sensor.vel[1] - vel_old[1]) / (0.5*dt_secs + 0.5*self.dt_old.as_secs_f64());
+        self.sensor.acc[0] = (self.sensor.vel[0] - vel_old[0]) / (0.5*dt_secs + 0.5*self.dt_old);
+        self.sensor.acc[1] = (self.sensor.vel[1] - vel_old[1]) / (0.5*dt_secs + 0.5*self.dt_old);
     }
 
     fn update_beam(&mut self, pos: Pos, angle_rad: f64) {

@@ -9,7 +9,10 @@ crate-type = [ "cdylib" ]
 
 [dependencies]
 anyhow = "1.0.81"
+console_error_panic_hook = "0.1.7"
+fluvio-wasm-timer = "0.2.5"
 wasm-bindgen = "0.2.91"
+wasm-bindgen-futures = "0.4.42"
 
 [dependencies.web-sys]
 version = "0.3.69"
@@ -20,4 +23,6 @@ features = [
     'Node',
     'Window',
     'CssStyleDeclaration',
+    'console',
+    'Performance',
 ]

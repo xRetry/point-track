@@ -1,3 +1,3 @@
 #!/bin/sh
 
-wasm-pack build --target web && python -m http.server
+wasm-pack build --debug --target web && python -m http.server
